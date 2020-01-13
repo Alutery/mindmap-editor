@@ -5,7 +5,7 @@
 - app
 - mm-render
 
-### Install Dependencies
+### 1. Install Dependencies
 
 This project uses NodeJS to run the app. 
 First download and install NodeJS (https://nodejs.org). 
@@ -15,7 +15,12 @@ cd app
 npm i
 ```
 
-### Run
+### 2. Build
+```bash
+npm run build
+```
+
+### 3. Run
 
 ```bash
 node server.js
