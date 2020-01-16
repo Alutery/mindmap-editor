@@ -141,18 +141,14 @@ export default class MindMapRender {
 
                         let currentNode = this.tree.nodes(d);
 
-                        if (currentNode[0]._children != null)
-                        {
+                        if (currentNode[0]._children != null) {
                             currentNode[0]._children.push(newNode);
                             d.children = d._children;
                             d._children = null;
                         }
-                        else if (currentNode[0].children != null && currentNode[0]._children == null)
-                        {
+                        else if (currentNode[0].children != null && currentNode[0]._children == null) {
                             currentNode[0].children.push(newNode);
-                        }
-                        else
-                        {
+                        } else {
                             currentNode[0].children = [];
                             currentNode[0].children.push(newNode);
                             currentNode[0].children.x = d.x0;
@@ -167,7 +163,7 @@ export default class MindMapRender {
                     title: 'Delete a node',
                     action: (elm, d, i) => {
                         let delName = d.name;
-                        if (d.parent && d.parent.children) { // cannot delete a root
+                        if (d.parent && d.parent.children) {
                             let nodeToDelete = _.where(d.parent.children, {
                                 name: delName
                             });
@@ -175,19 +171,16 @@ export default class MindMapRender {
                                 if (nodeToDelete[0].children != null || nodeToDelete[0]._children != null) {
                                     if (confirm('Deleting this node will delete all its children too! Proceed?')) {
                                         d.parent.children = _.without(d.parent.children, nodeToDelete[0]);
-                                        // console.log('Deleted parent node "' + delName + '"');
                                         this.update(this.root);
-                                    } else {
-                                        //console.log('Cancelled deleting the node "' + delName + '"');
                                     }
                                 } else {
                                     d.parent.children = _.without(d.parent.children, nodeToDelete[0]);
-                                    // console.log('Deleted end node "' + delName + '"');
                                 }
                             }
+                            this.update(this.root);
+                        } else {
+                            alert('Cannot delete the root!');
                         }
-                        //      bar1data = [[0,0],[0,0],[0,0]];
-                        this.update(this.root);
                     }
                 }
             ];
