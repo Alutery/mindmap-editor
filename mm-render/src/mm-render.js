@@ -17,14 +17,6 @@ const defaults = {
     panBoundary: 20, // Within 20px from edges will pan when dragging.
 
     duration: 750,
-
-    // new node initial values
-    newNodeBase: "New",
-    newNodeValue: 5,
-    nodeNoMax: 10000,
-    newNodeStatus: "In",
-    newNodeType: "Medium",
-    newLinkWidth: 15.
 };
 
 
@@ -123,7 +115,6 @@ export default class MindMapRender {
                     action: (elm, d, i) => {
                         let result = prompt('Change the name of the node', d.name);
                         if (result) {
-                            let temp = d.name;
                             d.name = result;
                             this.update(this.root);
                             this.centerNode(d);
@@ -133,120 +124,43 @@ export default class MindMapRender {
                 {
                     title: 'Add a node',
                     action: (elm, d, i) => {
-                        debugger;
-                        let newNodeName = this.newNodeBase + parseInt(Math.round(10000 * Math.random()));
+                        let newNodeName = prompt('Name of the new node', 'New Node');
+                        if (!newNodeName) {
+                            return;
+                        }
                         let newNode = {
-                            "name": newNodeName,
-                            "nodeNo": this.nodeNoMax,
-                            "value": this.newNodeValue,
-                            "status": this.newNodeStatus,
-                            "type": this.newNodeType,
-                            "mainRoot": this.root.name,
-                            "nodeBefore": d.name,
-                            "linkWidth": 15,
-                            "children": []
-                            //        "parent":d
+                            'value': {
+                                'TEXT': newNodeName,
+                            },
+                            'name': newNodeName,
+                            'type': 'node',
+                            "children": [],
+                            "parent": d,
+                            'depth': d.depth + 1,
                         };
 
-                        /*
-                              if (!d.children && !d._children)
-                                {
-                        //            d3.json("http://xxxx:2222/getChildNodes", function(error,response) {
-                        //          d.children.forEach(function(child){
-                                    if (!tree.nodes(d)[0]._children){
-                                      tree.nodes(d)[0]._children = [];
-                                    }
-                                    d.children[0].x = d.x0;
-                                    d.children[0].y = d.y0;
-                                    tree.nodes(d)[0]._children.push(newNode);
-                        //          });
-                                  if (d.children) {
-                                    d._children = d.children;
-                                    d.children = null;
-                                  }
-                                  else {
-                                    d.children = d._children;
-                                    d._children = null;
-                                  }
-                                  update(d);
-                        //            });
-                                }
-                              if (d.children) {
-                                d._children = d.children;
-                                d.children = null;
-                              }
-                              else {
-                                d.children = d._children;
-                                d._children = null;
-                              }
-                        */
-
-
-                        //Last working?
                         let currentNode = this.tree.nodes(d);
-                        //      var currentNode = _.where(d.parent.children, {name: d.name});
-                        //var myJSONObject = {"name": "new Node","children": []};
-                        // console.log("currentNode=");
-                        // console.log(currentNode);
 
-                        //  if (currentNode.children) curentNode.children.push(newNode); else currentNode.children = [newNode];
-                        //  nodes.push(newNode);
-                        //*
-                        if (currentNode[0]._children != null) {
-                            //window.alert("currentNode[0]._children!=null");
+                        if (currentNode[0]._children != null)
+                        {
                             currentNode[0]._children.push(newNode);
-                            // console.log("_children != null");
-                            // console.log(currentNode[0]._children);
                             d.children = d._children;
                             d._children = null;
-                        } else if (currentNode[0].children != null && currentNode[0]._children == null) {
-                            //window.alert("currentNode[0]._children!=null && currentNode[0]._children!=null");
+                        }
+                        else if (currentNode[0].children != null && currentNode[0]._children == null)
+                        {
                             currentNode[0].children.push(newNode);
-                            // console.log("(_)children != null");
-                            // console.log(currentNode[0].children);
-                        } else {
-                            //window.alert("else");
-                            currentNode[0].children = []; // erases previous children!
+                        }
+                        else
+                        {
+                            currentNode[0].children = [];
                             currentNode[0].children.push(newNode);
                             currentNode[0].children.x = d.x0;
                             currentNode[0].children.y = d.y0;
-                            // console.log("children == null");
-                            // console.log(currentNode[0].children);
                         }
-
 
                         this.update(this.root);
                         this.expand(currentNode);
-                        // this.sortTree();
-
-                        /*/
-                        //console.log("Current node added children: " + currentNode[0].children[0].name);
-
-                        /*
-                        // other way tested, not working
-                              // repeating the code from moving the dragged node to other parent node ?
-                                var selectedNode = tree.nodes(d);
-                                if (typeof selectedNode.children !== 'undefined' || typeof selectedNode._children !== 'undefined') {
-                                  if (typeof selectedNode.children !== 'undefined') {
-                                    selectedNode.children.push(newNode);
-                                  } else {
-                                    selectedNode._children.push(newNode);
-                                  }
-                                } else {
-                                  selectedNode.children = [];
-                                  selectedNode.children.push(newNode);
-                                }
-
-                                // Make sure that the node being added to is expanded so user can see added node is correctly moved
-                        //        tree.links(selectedNode).push(selectedNode[selectedNode.length-1]);
-
-                        //      bar1data = [[0,0],[0,0],[0,0]];
-                        //      tree.links(currentNode).push(currentNode[currentNode.length-1]);
-                              update(root);
-                              expand(currentNode);
-                              sortTree();
-                        */
-                        // console.log('Inserted a new node to "' + d.name + '" with a node name "' + newNode.name + '"');
                     }
                 },
                 {
