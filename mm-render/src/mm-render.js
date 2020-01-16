@@ -104,9 +104,9 @@ export default class MindMapRender {
 
 
         this.dragListener = d3.behavior.drag()
-            .on("dragstart", this.dragStarted(this))
+            .on("dragstart", this.dragStart(this))
             .on("drag", this.dragged(this))
-            .on("dragend", this.dragEnded(this));
+            .on("dragend", this.dragEnd(this));
 
 
         // Append a group which holds all nodes and which the zoom Listener can act upon.
@@ -326,7 +326,7 @@ export default class MindMapRender {
         this.centerNode(this.root);
     }
 
-    dragStarted(self) {
+    dragStart(self) {
         return function (d) {
             if (d == self.root) {
                 return;
@@ -381,7 +381,7 @@ export default class MindMapRender {
         }
     }
 
-    dragEnded(self) {
+    dragEnd(self) {
         return function (d) {
             if (d == self.root) {
                 return;
