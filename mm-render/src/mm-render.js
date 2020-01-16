@@ -10,7 +10,7 @@ import {saveAs} from 'file-saver';
  */
 const defaults = {
     secondLevelNodes: [],
-    isAttributes: false,
+    isAttributes: true,
 
     // panning variables
     panSpeed: 200,
@@ -103,81 +103,10 @@ export default class MindMapRender {
             .call(this.zoomListener);
 
 
-        var self = this;
         this.dragListener = d3.behavior.drag()
-            .on("dragstart", function (d) {
-                if (d === self.root) {
-                    return;
-                }
-                self.dragStarted = true;
-                self.nodes = self.tree.nodes(d);
-                d3.event.sourceEvent.stopPropagation();
-                // it's important that we suppress the mouseover event on the node being dragged. Otherwise it will absorb the mouseover event and the underlying node will not detect it d3.select(this).attr('pointer-events', 'none');
-            })
-            .on("drag", function (d) {
-                if (d === self.root) {
-                    return;
-                }
-                if (self.dragStarted) {
-                    self.domNode = self;
-                    self.initiateDrag(d, self.domNode);
-                }
-
-                // get coords of mouseEvent relative to svg container to allow for panning
-                let relCoords = d3.mouse($('svg').get(0));
-                if (relCoords[0] < self.panBoundary) {
-                    self.panTimer = true;
-                    self.pan(this, 'left');
-                } else if (relCoords[0] > ($('svg').width() - self.panBoundary)) {
-                    self.panTimer = true;
-                    self.pan(this, 'right');
-                } else if (relCoords[1] < this.panBoundary) {
-                    self.panTimer = true;
-                    self.pan(this, 'up');
-                } else if (relCoords[1] > ($('svg').height() - self.panBoundary)) {
-                    self.panTimer = true;
-                    self.pan(this, 'down');
-                } else {
-                    try {
-                        clearTimeout(self.panTimer);
-                    } catch (e) {
-
-                    }
-                }
-                d.x0 += d3.event.dy;
-                d.y0 += d3.event.dx;
-                let node = d3.select(this);
-                node.attr("transform", "translate(" + d.y0 + "," + d.x0 + ")");
-                self.updateTempConnector();
-            }).on("dragend", function (d) {
-                if (d === self.root) {
-                    return;
-                }
-                self.domNode = this;
-                if (self.selectedNode) {
-                    // now remove the element from the parent, and insert it into the new elements children
-                    let index = self.draggingNode.parent.children.indexOf(self.draggingNode);
-                    if (index > -1) {
-                        self.draggingNode.parent.children.splice(index, 1);
-                    }
-                    if (typeof self.selectedNode.children !== 'undefined' || typeof self.selectedNode._children !== 'undefined') {
-                        if (typeof self.selectedNode.children !== 'undefined') {
-                            self.selectedNode.children.push(self.draggingNode);
-                        } else {
-                            self.selectedNode._children.push(self.draggingNode);
-                        }
-                    } else {
-                        self.selectedNode.children = [];
-                        self.selectedNode.children.push(self.draggingNode);
-                    }
-                    // Make sure that the node being added to is expanded so user can see added node is correctly moved
-                    self.expand(self.selectedNode);
-                    // self.sortTree();
-                    self.endDrag(this);
-                } else {
-                    self.endDrag(this);
-                }
-            });
+            .on("dragstart", this.dragStarted(this))
+            .on("drag", this.dragged(this))
+            .on("dragend", this.dragEnded(this));
 
 
         // Append a group which holds all nodes and which the zoom Listener can act upon.
@@ -257,8 +186,8 @@ export default class MindMapRender {
                         let currentNode = this.tree.nodes(d);
                         //      var currentNode = _.where(d.parent.children, {name: d.name});
                         //var myJSONObject = {"name": "new Node","children": []};
-                        console.log("currentNode=");
-                        console.log(currentNode);
+                        // console.log("currentNode=");
+                        // console.log(currentNode);
 
                         //  if (currentNode.children) curentNode.children.push(newNode); else currentNode.children = [newNode];
                         //  nodes.push(newNode);
@@ -266,23 +195,23 @@ export default class MindMapRender {
                         if (currentNode[0]._children != null) {
                             //window.alert("currentNode[0]._children!=null");
                             currentNode[0]._children.push(newNode);
-                            console.log("_children != null");
-                            console.log(currentNode[0]._children);
+                            // console.log("_children != null");
+                            // console.log(currentNode[0]._children);
                             d.children = d._children;
                             d._children = null;
                         } else if (currentNode[0].children != null && currentNode[0]._children == null) {
                             //window.alert("currentNode[0]._children!=null && currentNode[0]._children!=null");
                             currentNode[0].children.push(newNode);
-                            console.log("(_)children != null");
-                            console.log(currentNode[0].children);
+                            // console.log("(_)children != null");
+                            // console.log(currentNode[0].children);
                         } else {
                             //window.alert("else");
                             currentNode[0].children = []; // erases previous children!
                             currentNode[0].children.push(newNode);
                             currentNode[0].children.x = d.x0;
                             currentNode[0].children.y = d.y0;
-                            console.log("children == null");
-                            console.log(currentNode[0].children);
+                            // console.log("children == null");
+                            // console.log(currentNode[0].children);
                         }
 
 
@@ -317,7 +246,7 @@ export default class MindMapRender {
                               expand(currentNode);
                               sortTree();
                         */
-                        console.log('Inserted a new node to "' + d.name + '" with a node name "' + newNode.name + '"');
+                        // console.log('Inserted a new node to "' + d.name + '" with a node name "' + newNode.name + '"');
                     }
                 },
                 {
@@ -332,14 +261,14 @@ export default class MindMapRender {
                                 if (nodeToDelete[0].children != null || nodeToDelete[0]._children != null) {
                                     if (confirm('Deleting this node will delete all its children too! Proceed?')) {
                                         d.parent.children = _.without(d.parent.children, nodeToDelete[0]);
-                                        console.log('Deleted parent node "' + delName + '"');
+                                        // console.log('Deleted parent node "' + delName + '"');
                                         this.update(this.root);
                                     } else {
                                         //console.log('Cancelled deleting the node "' + delName + '"');
                                     }
                                 } else {
                                     d.parent.children = _.without(d.parent.children, nodeToDelete[0]);
-                                    console.log('Deleted end node "' + delName + '"');
+                                    // console.log('Deleted end node "' + delName + '"');
                                 }
                             }
                         }
@@ -394,9 +323,94 @@ export default class MindMapRender {
 
         // Layout the tree initially and center on the root node.
         this.update(this.root);
-        console.log(this.root);
-
         this.centerNode(this.root);
+    }
+
+    dragStarted(self) {
+        return function (d) {
+            if (d == self.root) {
+                return;
+            }
+            self.dragStarted = true;
+            self.nodes = self.tree.nodes(d);
+            d3.event.sourceEvent.stopPropagation();
+            // it's important that we suppress the mouseover event on the node being dragged.
+            // Otherwise it will absorb the mouseover event and the underlying node will not detect it
+            // d3.select(this).attr('pointer-events', 'none');
+        }
+    }
+
+    dragged(self) {
+        {
+            return function (d) {
+                if (this === self.root) {
+                    return;
+                }
+                if (self.dragStarted) {
+                    self.domNode = this;
+                    self.initiateDrag(d, self.domNode, self);
+                }
+
+                // get coords of mouseEvent relative to svg container to allow for panning
+                let relCoords = d3.mouse($('svg').get(0));
+                if (relCoords[0] < self.panBoundary) {
+                    self.panTimer = true;
+                    self.pan(this, 'left');
+                } else if (relCoords[0] > ($('svg').width() - self.panBoundary)) {
+                    self.panTimer = true;
+                    self.pan(this, 'right');
+                } else if (relCoords[1] < self.panBoundary) {
+                    self.panTimer = true;
+                    self.pan(this, 'up');
+                } else if (relCoords[1] > ($('svg').height() - self.panBoundary)) {
+                    self.panTimer = true;
+                    self.pan(this, 'down');
+                } else {
+                    try {
+                        clearTimeout(self.panTimer);
+                    } catch (e) {
+
+                    }
+                }
+                d.x0 += d3.event.dy;
+                d.y0 += d3.event.dx;
+                let node = d3.select(this);
+                node.attr("transform", "translate(" + d.y0 + "," + d.x0 + ")");
+                self.updateTempConnector(self);
+            }
+        }
+    }
+
+    dragEnded(self) {
+        return function (d) {
+            if (d == self.root) {
+                return;
+            }
+            self.domNode = this;
+            if (self.selectedNode) {
+                // now remove the element from the parent, and insert it into the new elements children
+                let index = self.draggingNode.parent.children.indexOf(self.draggingNode);
+                if (index > -1) {
+                    self.draggingNode.parent.children.splice(index, 1);
+                }
+                if (typeof self.selectedNode.children !== 'undefined' || typeof self.selectedNode._children !== 'undefined') {
+                    if (typeof self.selectedNode.children !== 'undefined') {
+                        self.selectedNode.children.push(self.draggingNode);
+                    } else {
+                        self.selectedNode._children.push(self.draggingNode);
+                    }
+                } else {
+                    self.selectedNode.children = [];
+                    self.selectedNode.children.push(self.draggingNode);
+                }
+                // Make sure that the node being added to is expanded so user can see added node is correctly moved
+                self.expand(self.selectedNode);
+                // self.sortTree();
+                self.endDrag(self);
+            } else {
+                self.endDrag(self);
+            }
+        }
     }
 
     /**
@@ -408,58 +422,57 @@ export default class MindMapRender {
         });
     }
 
-    initiateDrag(d, domNode) {
-        this.draggingNode = d;
+    initiateDrag(d, domNode, self) {
+        self.draggingNode = d;
         d3.select(domNode).select('.ghostCircle').attr('pointer-events', 'none');
         d3.selectAll('.ghostCircle').attr('class', 'ghostCircle show');
         d3.select(domNode).attr('class', 'node activeDrag');
 
-        this.svgGroup.selectAll("g.node").sort(function (a, b) { // select the parent and sort the path's
-            alert(this.draggingNode.id);
-            if (a.id !== this.draggingNode.id) return 1; // a is not the hovered element, send "a" to the back
+        self.svgGroup.selectAll("g.node").sort(function (a, b) { // select the parent and sort the path's
+            if (a.id !== self.draggingNode.id) return 1; // a is not the hovered element, send "a" to the back
             else return -1; // a is the hovered element, bring "a" to the front
         });
         // if nodes has children, remove the links and nodes
-        if (this.nodes.length > 1) {
+        if (self.nodes.length > 1) {
             // remove link paths
-            this.links = this.tree.links(this.nodes);
-            let nodePaths = this.svgGroup.selectAll("path.link")
-                .data(this.links, function (d) {
+            self.links = self.tree.links(self.nodes);
+            let nodePaths = self.svgGroup.selectAll("path.link")
+                .data(self.links, function (d) {
                     return d.target.id;
                 }).remove();
             // remove child nodes
-            let nodesExit = this.svgGroup.selectAll("g.node")
-                .data(this.nodes, function (d) {
+            let nodesExit = self.svgGroup.selectAll("g.node")
+                .data(self.nodes, function (d) {
                     return d.id;
                 }).filter(function (d, i) {
-                    return d.id !== this.draggingNode.id;
+                    return d.id !== self.draggingNode.id;
 
                 }).remove();
         }
 
         // remove parent link
-        let parentLink = this.tree.links(this.tree.nodes(this.draggingNode.parent));
-        this.svgGroup.selectAll('path.link').filter(function (d, i) {
-            if (d.target.id === this.draggingNode.id) {
+        let parentLink = self.tree.links(self.tree.nodes(self.draggingNode.parent));
+        self.svgGroup.selectAll('path.link').filter(function (d, i) {
+            if (d.target.id === self.draggingNode.id) {
                 return true;
             }
             return false;
         }).remove();
 
-        this.dragStarted = null;
+        self.dragStarted = null;
     }
 
     endDrag(self) {
-        this.selectedNode = null;
+        self.selectedNode = null;
         d3.selectAll('.ghostCircle').attr('class', "ghostCircle");
-        d3.select(this.domNode).attr('class', 'node');
+        d3.select(self.domNode).attr('class', 'node');
         // now restore the mouseover event or we won't be able to drag a 2nd time
-        d3.select(this.domNode).select('.ghostCircle').attr('pointer-events', '');
-        this.updateTempConnector();
-        if (this.draggingNode !== null) {
-            this.update(this.root);
-            this.centerNode(this.draggingNode);
-            this.draggingNode = null;
+        d3.select(self.domNode).select('.ghostCircle').attr('pointer-events', '');
+        self.updateTempConnector(self);
+        if (self.draggingNode !== null) {
+            self.update(self.root);
+            self.centerNode(self.draggingNode);
+            self.draggingNode = null;
         }
     }
 
@@ -488,7 +501,7 @@ export default class MindMapRender {
     }
 
     collapseAll() {
-        if(!this.root.children) {
+        if (!this.root.children) {
             return;
         }
 
@@ -618,10 +631,6 @@ export default class MindMapRender {
             .call(this.dragListener)
             .attr("class", "node")
             .attr("transform", function (d) {
-                // console.log(source);
-                // console.log("translate(" + d.y + "," + d.x +  ")"); // d.x - is a problem
-                // console.log("translate(" + source.y0 + "," + source.x0 +  ")"); // source.x0 (0, 75) -> (0, 15)
-
                 return "translate(" + source.y0 + "," + source.x0 + ")";
             })
             .on('click', (d) => {
@@ -694,7 +703,6 @@ export default class MindMapRender {
         let nodeUpdate = node.transition()
             .duration(this.duration)
             .attr("transform", function (d) {
-                // console.log("translate(" + d.y + "," + d.x + ")");
                 return "translate(" + d.y + "," + d.x + ")";
             });
 
@@ -730,7 +738,6 @@ export default class MindMapRender {
                     x: source.x0,
                     y: source.y0
                 };
-                // console.log(o);
                 return this.diagonal({
                     source: o,
                     target: o
@@ -759,7 +766,6 @@ export default class MindMapRender {
 
         // Stash the old positions for transition.
         nodes.forEach(function (d) {
-            // console.log(d.x + ' ' + d.y);
             d.x0 = d.x;
             d.y0 = d.y;
         });
@@ -798,11 +804,9 @@ export default class MindMapRender {
 
     // Function to center node when clicked/dropped so node doesn't get lost when collapsing/moving with large amount of children.
     centerNode(source) {
-        // console.log(this);
         let scale = this.zoomListener.scale();
         let x = -source.y0;
         let y = -source.x0;
-        // console.log(x + ' ' + y);
 
         x = x * scale + this.viewerWidth / 2;
         y = y * scale + this.viewerHeight / 2;
@@ -827,18 +831,18 @@ export default class MindMapRender {
     }
 
     // Function to update the temporary connector indicating dragging affiliation
-    updateTempConnector() {
+    updateTempConnector(self) {
         let data = [];
-        if (this.draggingNode !== null && this.selectedNode !== null) {
+        if (self.draggingNode != null && self.selectedNode != null) {
             // have to flip the source coordinates since we did this for the existing connectors on the original tree
             data = [{
                 source: {
-                    x: this.selectedNode.y0,
-                    y: this.selectedNode.x0
+                    x: self.selectedNode.y0,
+                    y: self.selectedNode.x0
                 },
                 target: {
-                    x: this.draggingNode.y0,
-                    y: this.draggingNode.x0
+                    x: self.draggingNode.y0,
+                    y: self.draggingNode.x0
                 }
             }];
         }
@@ -857,12 +861,12 @@ export default class MindMapRender {
 
     overCircle(d) {
         this.selectedNode = d;
-        this.updateTempConnector();
+        this.updateTempConnector(this);
     };
 
     outCircle(d) {
         this.selectedNode = null;
-        this.updateTempConnector();
+        this.updateTempConnector(this);
     };
 
 
