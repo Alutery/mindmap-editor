@@ -27,7 +27,12 @@ export default class MindMapRender {
     }
 
     open(file) {
-        this.init(file);
+        try {
+            this.treeData = this.getData(file);
+            this.init();
+        } catch (e) {
+            throw e;
+        }
     }
 
     /**
@@ -40,9 +45,7 @@ export default class MindMapRender {
     /**
      * Initialize the tree.
      */
-    init(file) {
-        this.treeData = this.getData(file);
-
+    init() {
         // Calculate total nodes, max label length
         this.totalNodes = 0;
         this.maxLabelLength = 0;
@@ -104,9 +107,6 @@ export default class MindMapRender {
         // Append a group which holds all nodes and which the zoom Listener can act upon.
         this.svgGroup = this.baseSvg.append("g");
 
-        // document.getElementById("expandAll").addEventListener("click", this.expandAll.bind(this);
-        // document.getElementById("collapseAll").addEventListener("click", this.collapseAll.bind(this);
-
         // Define a context (popup) menu
         this.menu =
             [
@@ -145,8 +145,7 @@ export default class MindMapRender {
                             currentNode[0]._children.push(newNode);
                             d.children = d._children;
                             d._children = null;
-                        }
-                        else if (currentNode[0].children != null && currentNode[0]._children == null) {
+                        } else if (currentNode[0].children != null && currentNode[0]._children == null) {
                             currentNode[0].children.push(newNode);
                         } else {
                             currentNode[0].children = [];
@@ -431,7 +430,7 @@ export default class MindMapRender {
     getData(file) {
         let filePath = URL.createObjectURL(file);
         let extension = path.extname(file.name);
-        this.fileName = path.basename(file.name);
+        this.fileName = path.basename(file.name, extension);
 
         switch (extension) {
             case ".mm":
@@ -439,8 +438,7 @@ export default class MindMapRender {
             case ".json":
                 return this.readJson(filePath);
             default:
-                alert('Read error'); // throw exception ???
-                return null;
+                throw new Error('Wrong format: please, choose .mm or .json');
         }
     }
 
@@ -464,19 +462,18 @@ export default class MindMapRender {
     }
 
     getTreeData() {
-        const getCircularReplacer = (deletePorperties) => { //func that allows a circular json to be stringified
+        const getCircularReplacer = (deletePorperties) => {
             const seen = new WeakSet();
             return (key, value) => {
                 if (typeof value === "object" && value !== null) {
                     if (deletePorperties) {
-                        delete value.id; //delete all properties you don't want in your json (not very convenient but a good temporary solution)
+                        //delete all properties you don't want in your json (not very convenient but a good temporary solution)
+                        delete value.id;
                         delete value.x0;
                         delete value.y0;
                         delete value.y;
                         delete value.x;
                         delete value.depth;
-                        delete value.size;
-                        delete value.parent;
                     }
                     if (seen.has(value)) {
                         return;
@@ -487,11 +484,11 @@ export default class MindMapRender {
             };
         };
 
-        let myRoot = JSON.stringify(this.root, getCircularReplacer(false)); //Stringify a first time to clone the root object (it's allow you to delete properties you don't want to save)
-        let myvar = JSON.parse(myRoot);
-        myvar = JSON.stringify(myvar, getCircularReplacer(true), 4); //Stringify a second time to delete the propeties you don't need
+        let root = JSON.stringify(this.root, getCircularReplacer(false)); //Stringify a first time to clone the root object (it's allow you to delete properties you don't want to save)
+        let rootCopy = JSON.parse(root);
+        rootCopy = JSON.stringify(rootCopy, getCircularReplacer(true), 2); //Stringify a second time to delete the propeties you don't need
 
-        return myvar;
+        return rootCopy;
     }
 
     update(source) {

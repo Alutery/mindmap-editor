@@ -93,7 +93,6 @@ function objToJSON(tagArray, id, parent)
     node.name = tagArray[id].attr['TEXT'];
     node.extra = tagArray[id].extra;
     node.type = tagArray[id].type;
-    node.attr = tagArray[id].attr;
     if (parent === false) {
         node.parent = 'null'
     } else {

@@ -38,10 +38,14 @@ btnFocusRoot.addEventListener('click', () => {
 
 btnOpen.addEventListener('change', () => {
     let selectedFile = document.getElementById('fileInput').files[0];
-    mmRender.open(selectedFile);
-    isOpen = true;
+    try {
+        mmRender.open(selectedFile);
+        isOpen = true;
 
-    document.querySelectorAll('.toggle').forEach((elem) => {
-        elem.style.display = 'block';
-    });
+        document.querySelectorAll('.toggle').forEach((elem) => {
+            elem.style.display = 'block';
+        });
+    } catch (e) {
+        alert(e.message);
+    }
 });
