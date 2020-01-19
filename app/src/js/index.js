@@ -7,6 +7,7 @@ import MindMapRender from 'mm-render/src/mm-render';
 
 const mmRender = new MindMapRender();
 
+const btnNew = document.getElementById('new');
 const btnOpen = document.getElementById('open');
 const btnSave = document.getElementById('save');
 const btnExpandAll = document.getElementById('expandAll');
@@ -14,6 +15,10 @@ const btnCollapseAll = document.getElementById('collapseAll');
 const btnFocusRoot = document.getElementById('focusRoot');
 
 let isOpen = false;
+
+btnNew.addEventListener('click', () => {
+    mmRender.open();
+});
 
 btnSave.addEventListener('click', () => {
     if(isOpen) {

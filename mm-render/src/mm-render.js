@@ -24,11 +24,24 @@ export default class MindMapRender {
 
     constructor(config = []) {
         this.setConfig(config);
+        this.defaultRoot = {
+            'vale': {
+                'TEXT': 'New node',
+            },
+            'name': 'New node',
+            'type': 'node',
+            'parent': undefined,
+            'children': []
+        };
     }
 
-    open(file) {
+    open(file = null) {
         try {
-            this.treeData = this.getData(file);
+            if(file) {
+                this.treeData = this.getData(file);
+            } else {
+                this.treeData = this.defaultRoot;
+            }
             this.init();
         } catch (e) {
             throw e;
@@ -154,6 +167,14 @@ export default class MindMapRender {
                             currentNode[0].children.y = d.y0;
                         }
 
+                        this.maxLabelLength = 0;
+                        this.visit(this.treeData, (d) => {
+                            this.totalNodes++;
+                            this.maxLabelLength = Math.max(d.name.length, this.maxLabelLength);
+                        }, (d) => {
+                            return d.children && d.children.length > 0 ? d.children : null;
+                        });
+
                         this.update(this.root);
                         this.expand(currentNode);
                     }
@@ -176,6 +197,14 @@ export default class MindMapRender {
                                     d.parent.children = _.without(d.parent.children, nodeToDelete[0]);
                                 }
                             }
+
+                            this.maxLabelLength = 0;
+                            this.visit(this.treeData, (d) => {
+                                this.totalNodes++;
+                                this.maxLabelLength = Math.max(d.name.length, this.maxLabelLength);
+                            }, (d) => {
+                                return d.children && d.children.length > 0 ? d.children : null;
+                            });
                             this.update(this.root);
                         } else {
                             alert('Cannot delete the root!');
@@ -230,6 +259,7 @@ export default class MindMapRender {
         // Layout the tree initially and center on the root node.
         this.update(this.root);
         this.centerNode(this.root);
+        console.log(this.root);
     }
 
     dragStart(self) {
