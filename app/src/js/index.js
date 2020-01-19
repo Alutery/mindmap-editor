@@ -2,6 +2,7 @@ import '../css/style.css';
 import '../css/menu-style.css';
 import '../css/context-menu-style.css';
 import '../../favicon.ico';
+import * as $ from 'jquery';
 
 import MindMapRender from 'mm-render/src/mm-render';
 
@@ -18,13 +19,13 @@ let isOpen = false;
 
 btnNew.addEventListener('click', () => {
     mmRender.open();
+    toggleOpen();
 });
 
 btnSave.addEventListener('click', () => {
-    if(isOpen) {
+    if (isOpen) {
         mmRender.saveJson();
-    }
-    else {
+    } else {
         alert('No thing to save!');
     }
 });
@@ -45,12 +46,24 @@ btnOpen.addEventListener('change', () => {
     let selectedFile = document.getElementById('fileInput').files[0];
     try {
         mmRender.open(selectedFile);
-        isOpen = true;
-
-        document.querySelectorAll('.toggle').forEach((elem) => {
-            elem.style.display = 'block';
-        });
+        toggleOpen();
     } catch (e) {
         alert(e.message);
     }
 });
+
+$(".drop").mouseover(function () {
+    $(".dropdown").show(300);
+});
+
+$(".drop").mouseleave(function () {
+    $(".dropdown").hide(300);
+});
+
+function toggleOpen() {
+    isOpen = true;
+
+    document.querySelectorAll('.toggle').forEach((elem) => {
+        elem.style.display = 'block';
+    });
+}

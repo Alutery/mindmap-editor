@@ -1,32 +1,85 @@
+body {
+  -moz-osx-font-smoothing: grayscale;
+  -ms-flex-direction: column;
+  -webkit-box-direction: normal;
+  -webkit-box-orient: vertical;
+  -webkit-font-smoothing: antialiased;
+  background:#f5f5f5;
+  min-height:100vh;
+  display:flex;
+  flex-direction:column;
+}
+
+body ul {
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+
+.menu-bar {
+  background: #333;
+}
+
 ul.menu-bar {
   font-family: FreeSans, sans-serif;
-  list-style-type: none;
   margin: 0;
   padding: 0 15px;
-  overflow: hidden;
-  background-color: #333;
   position: fixed;
   width: 100%;
+  box-shadow:0 3px 15px rgba(0,0,0,.15);
 }
 
 .menu-bar li {
   float: left;
   cursor: pointer;
+  position: relative;
 }
 
-li a {
+body ul li a {
   display: block;
   color: white;
-  text-align: center;
-  padding: 14px 16px;
+  text-align: left;
+  padding: 1rem 2rem;
   text-decoration: none;
 }
 
-/* Change the link color to #111 (black) on hover */
-li a:hover {
-  background-color: #111;
+ul.menu-bar li a:hover,
+ul.menu-bar li a:focus {
+  background: #111;
 }
 
 label {
   cursor: pointer;
+}
+
+ul.menu-bar li a:focus {
+  color: white;
+}
+
+.menu-bar li a:not(:only-child)::after {
+  padding-left: 4px;
+  content: ' ▾';
+}
+
+ul.menu-bar li ul li {
+  min-width: 190px;
+}
+
+ul.menu-bar li ul li a {
+  background: transparent;
+  color: #555;
+  border-bottom: 1px solid #DDE0E7;
+}
+
+ul.menu-bar li ul li a:hover,
+ul.menu-bar li ul li a:focus {
+  background: #eee;
+  color: #111;
+}
+
+.dropdown {
+  display: none;
+  position: absolute;
+  background: #fff;
+  box-shadow: 0 4px 10px rgba(10, 20, 30, .4);
 }

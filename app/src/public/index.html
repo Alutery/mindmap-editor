@@ -9,14 +9,18 @@
 </head>
 <body>
     <ul class="menu-bar">
-        <li id="new"><a>New</a></li>
-        <li id="open">
-            <a>
-                <input type="file" id="fileInput" accept=".mm, .json" style="display:none">
-                <label for="fileInput">Open</label>
-            </a>
+        <li class="drop">
+            <a>File</a>
+            <ul class="dropdown">
+                <li><a id="new">New</a></li>
+                <li><a id="open">
+                    <input type="file" id="fileInput" accept=".mm, .json" style="display:none">
+                    <label for="fileInput">Open..</label>
+                </a></li>
+                <li id="save" class="toggle" style="display: none;"><a>Save</a></li>
+                <li id="saveAs" class="toggle" style="display: none;"><a>Save As..</a></li>
+            </ul>
         </li>
-        <li id="save" class="toggle" style="display: none;"><a>Save</a></li>
         <li id="expandAll" class="toggle" style="display: none;"><a>Expand All</a></li>
         <li id="collapseAll" class="toggle" style="display: none;"><a>Collapse All</a></li>
         <li id="focusRoot" class="toggle" style="display: none;"><a>Focus Root</a></li>

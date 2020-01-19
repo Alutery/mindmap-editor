@@ -259,7 +259,6 @@ export default class MindMapRender {
         // Layout the tree initially and center on the root node.
         this.update(this.root);
         this.centerNode(this.root);
-        console.log(this.root);
     }
 
     dragStart(self) {
@@ -488,6 +487,15 @@ export default class MindMapRender {
 
     saveJson() {
         let blob = new Blob([this.getTreeData()], {type: "application/json"});
+        if(!this.fileName) {
+            let result;
+            while (!result) {
+                result = prompt('Enter the name of .json file:', 'New map');
+                this.fileName = result;
+                this.centerNode(d);
+            }
+        }
+
         saveAs(blob, `${this.fileName}.json`);
     }
 
