@@ -88,13 +88,11 @@ function arrayMapping(tagArray, impNodes, isAttributes)
  */
 function objToJSON(tagArray, id, parent)
 {
-
     let node = {};  // we create an empty object and save there all the relevant information about the node
     node.value = tagArray[id].attr;
     node.name = tagArray[id].attr['TEXT'];
     node.extra = tagArray[id].extra;
     node.type = tagArray[id].type;
-    node.attr = tagArray[id].attr;
     if (parent === false) {
         node.parent = 'null'
     } else {
@@ -118,23 +116,17 @@ function objToJSON(tagArray, id, parent)
  * @param {boolean} isAttributes - Whether to show or not all additional attributes.
  */
 function attrTrans(tagArray, isAttributes)
-{  // dealing with attributes of the objects
+{
     for (let i = 0; i < tagArray.length; i++) {
         let tagString = tagArray[i].tag;
-        let firstWord = tagString.substr(0, tagString.indexOf(" "));
-        tagString = tagString.substr(tagString.indexOf(" ") + 1);
+        tagArray[i].type = tagString.substr(0, tagString.indexOf(" "));
 
-        let nodeAttributes = ParseAttributes(tagString);
-        tagArray[i].type = firstWord;
-        tagArray[i].attr = nodeAttributes;
-        // for (var j = 0; j < nodeAttributes.length; j++) {
-        // 	if (j === 0) {
-        // 		tagArray[i].type = nodeAttributes[j];
-        // 	} else if (isAttributes) {
-        // 		tagArray[i].attr.push(nodeAttributes[j]);
-        // 	}
-        // }
+        if(isAttributes) {
+            tagString = tagString.substr(tagString.indexOf(" ") + 1);
+            tagArray[i].attr = ParseAttributes(tagString);
+        }
     }
+
     return tagArray;
 }
 
