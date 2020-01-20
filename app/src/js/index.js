@@ -16,12 +16,24 @@ const btnSaveAs = document.getElementById('saveAs');
 const btnExpandAll = document.getElementById('expandAll');
 const btnCollapseAll = document.getElementById('collapseAll');
 const btnFocusRoot = document.getElementById('focusRoot');
+const fileInput = document.getElementById('fileInput');
 
 let isOpen = false;
 
+function submitClosing() {
+    if (isOpen) {
+        if (!confirm('You will close the current file! Proceed?')) {
+            return false;
+        }
+    }
+    return true;
+}
+
 btnNew.addEventListener('click', () => {
-    mmRender.open();
-    toggleOpen();
+    if (submitClosing()) {
+        mmRender.open();
+        toggleOpen();
+    }
 });
 
 btnSave.addEventListener('click', () => {
@@ -52,8 +64,14 @@ btnFocusRoot.addEventListener('click', () => {
     mmRender.focusRoot();
 });
 
+fileInput.onclick = function (e) {
+    if (!submitClosing()) {
+        e.preventDefault();
+    }
+};
+
 btnOpen.addEventListener('change', () => {
-    let selectedFile = document.getElementById('fileInput').files[0];
+    let selectedFile = fileInput.files[0];
     try {
         mmRender.open(selectedFile);
         toggleOpen();
