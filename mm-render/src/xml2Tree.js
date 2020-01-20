@@ -2,14 +2,21 @@ import ParseAttributes from "./parseAttributes";
 
 export {readTextFile, arrayMapping, arrayToJSON, XMLToArray}; // список экспортируемых переменных
 
+let mapIcons = new Map(
+    [
+        ['go', '🐢'],
+        ['stop', '🦀'],
+        ['button_cancel', '❌']
+    ]
+);
+
 /**
  * Reads and returns content of the input file.
  * @constructor
  * @param {string} file - Path to XML/JSON file.
  * @return {string}
  */
-function readTextFile(file)
-{
+function readTextFile(file) {
     let allText = '';
     let rawFile = new XMLHttpRequest();
     rawFile.open('GET', file, false);
@@ -30,8 +37,7 @@ function readTextFile(file)
  * @param {array} impNodes - List of nodes that should be shown on the second level.
  * @param {boolean} isAttributes - Whether to show or not all additional attributes.
  */
-function arrayMapping(tagArray, impNodes, isAttributes)
-{
+function arrayMapping(tagArray, impNodes, isAttributes) {
     let mapArray = attrTrans(tagArray, isAttributes);
     let noMoreChildren;
     let newRootChildren;
@@ -86,8 +92,7 @@ function arrayMapping(tagArray, impNodes, isAttributes)
  * @param {array} id - id of the node.
  * @param {array} parent - id of node's parent.
  */
-function objToJSON(tagArray, id, parent)
-{
+function objToJSON(tagArray, id, parent) {
     let node = {};  // we create an empty object and save there all the relevant information about the node
     node.value = tagArray[id].attr;
     node.name = tagArray[id].attr['TEXT'];
@@ -99,24 +104,44 @@ function objToJSON(tagArray, id, parent)
         node.parent = parent.name;
     }
     node.children = [];
-    for (let i = 0; i < tagArray[id].children.length; i++) {  // for all children of the node we do the same
+    node.icons = [];
+    node.attributes = [];
+
+    let i = 0;
+
+    while (i < tagArray[id].children.length) {  // for all children of the node we do the same
         if (tagArray[tagArray[id].children[i] - 1].type === 'node' || node.parent === "null") {
             node.children.push(objToJSON(tagArray, tagArray[id].children[i] - 1, node));
         } else {
-            // парсинг атрибутов
+            while (i < tagArray[id].children.length && tagArray[tagArray[id].children[i] - 1].type !== 'node') {
+                let tag = tagArray[tagArray[id].children[i] - 1];
+                switch (tag.type) {
+                    case 'icon':
+                        node.icons.push(mapIcons.get(tag.attr['BUILTIN']));
+                        break;
+                    case 'attribute':
+                        node.attributes.push([tag.attr['NAME'], tag.attr['VALUE']]);
+                        break;
+                }
+                i++;
+            }
         }
+        i++;
     }
     return node;
 }
 
+
+function mathIcon() {
+
+}
 
 /**
  * Creates a final structure of an object to draw.
  * @param {array} tagArray - Array of nodes' tags.
  * @param {boolean} isAttributes - Whether to show or not all additional attributes.
  */
-function attrTrans(tagArray, isAttributes)
-{
+function attrTrans(tagArray, isAttributes) {
     for (let i = 0; i < tagArray.length; i++) {
         let tagString = tagArray[i].tag;
         tagArray[i].type = tagString.substr(0, tagString.indexOf(" "));
@@ -148,8 +173,7 @@ function arrayToJSON(tagArray)
  * Creates an array out of XML.
  * @param {string} text - XML text with input contents.
  */
-function XMLToArray(text)
-{
+function XMLToArray(text) {
     let head = '';
     let currentString = '';
     let documentType = '';

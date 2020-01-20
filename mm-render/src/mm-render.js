@@ -584,7 +584,7 @@ export default class MindMapRender {
                 return d.children || d._children ? "end" : "start";
             })
             .text(function (d) {
-                return d.name;
+                return d.icons.join('') + ' ' + d.name;
             })
             .style("fill-opacity", 0)
             .on('contextmenu', d3.contextMenu(this.menu));
@@ -613,7 +613,7 @@ export default class MindMapRender {
                 return d.children || d._children ? "end" : "start";
             })
             .text(function (d) {
-                return d.name;
+                return d.icons.join('') + ' ' + d.name;
             });
 
         // Change the circle fill depending on whether it has children and is collapsed
