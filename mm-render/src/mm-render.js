@@ -332,8 +332,7 @@ export default class MindMapRender {
                 }
                 // Make sure that the node being added to is expanded so user can see added node is correctly moved
                 self.expand(self.selectedNode);
-                debugger;
-                self.updateMaxLabelLength().bind(self);
+                self.updateMaxLabelLength.bind(self);
 
                 // self.sortTree();
                 self.endDrag(self);
