@@ -63,11 +63,12 @@ btnOpen.addEventListener('change', () => {
 });
 
 $(".drop").mouseover(function () {
-    $(".dropdown").show(300);
+    $(this).children('.dropdown').show();
+
 });
 
 $(".drop").mouseleave(function () {
-    $(".dropdown").hide(300);
+    $(this).children('.dropdown').hide();
 });
 
 function toggleOpen() {
