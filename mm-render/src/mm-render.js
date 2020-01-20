@@ -90,12 +90,7 @@ export default class MindMapRender {
             });
         // let self = this;
         // Call visit function to establish maxLabelLength
-        this.visit(this.treeData, (d) => {
-            this.totalNodes++;
-            this.maxLabelLength = Math.max(d.name.length, this.maxLabelLength);
-        }, (d) => {
-            return d.children && d.children.length > 0 ? d.children : null;
-        });
+        this.updateMaxLabelLength();
 
         // define the zoomListener which calls the zoom function on the "zoom" event constrained within the scaleExtents
         this.zoomListener = d3.behavior.zoom().scaleExtent([0.1, 3]).on("zoom", () => {
@@ -167,16 +162,9 @@ export default class MindMapRender {
                             currentNode[0].children.y = d.y0;
                         }
 
-                        this.maxLabelLength = 0;
-                        this.visit(this.treeData, (d) => {
-                            this.totalNodes++;
-                            this.maxLabelLength = Math.max(d.name.length, this.maxLabelLength);
-                        }, (d) => {
-                            return d.children && d.children.length > 0 ? d.children : null;
-                        });
-
                         this.update(this.root);
                         this.expand(currentNode);
+                        this.updateMaxLabelLength();
                     }
                 },
                 {
@@ -198,13 +186,7 @@ export default class MindMapRender {
                                 }
                             }
 
-                            this.maxLabelLength = 0;
-                            this.visit(this.treeData, (d) => {
-                                this.totalNodes++;
-                                this.maxLabelLength = Math.max(d.name.length, this.maxLabelLength);
-                            }, (d) => {
-                                return d.children && d.children.length > 0 ? d.children : null;
-                            });
+                            this.updateMaxLabelLength();
                             this.update(this.root);
                         } else {
                             alert('Cannot delete the root!');
@@ -259,6 +241,16 @@ export default class MindMapRender {
         // Layout the tree initially and center on the root node.
         this.update(this.root);
         this.centerNode(this.root);
+    }
+
+    updateMaxLabelLength() {
+        this.maxLabelLength = 0;
+        this.visit(this.treeData, (d) => {
+            this.totalNodes++;
+            this.maxLabelLength = Math.max(d.name.length, this.maxLabelLength);
+        }, (d) => {
+            return d.children && d.children.length > 0 ? d.children : null;
+        });
     }
 
     dragStart(self) {
@@ -340,6 +332,9 @@ export default class MindMapRender {
                 }
                 // Make sure that the node being added to is expanded so user can see added node is correctly moved
                 self.expand(self.selectedNode);
+                debugger;
+                self.updateMaxLabelLength().bind(self);
+
                 // self.sortTree();
                 self.endDrag(self);
             } else {
@@ -564,6 +559,7 @@ export default class MindMapRender {
             .on('click', (d) => {
                 if (d3.event.defaultPrevented) return; // click suppressed
                 d = this.toggleChildren(d);
+                this.updateMaxLabelLength();
                 this.update(d);
                 this.centerNode(d);
             });
