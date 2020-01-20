@@ -1,7 +1,6 @@
 import * as Xml2Tree from "./xml2Tree";
 import * as $ from 'jquery';
 import * as path from 'path';
-import {saveAs} from 'file-saver';
 
 
 /**
@@ -33,6 +32,7 @@ export default class MindMapRender {
             'parent': undefined,
             'children': []
         };
+        this.fileName = "New map";
     }
 
     open(file = null) {
@@ -483,20 +483,6 @@ export default class MindMapRender {
     readJson(flePath) {
         let JSONText = Xml2Tree.readTextFile(flePath);
         return JSON.parse(JSONText);
-    }
-
-    saveJson() {
-        let blob = new Blob([this.getTreeData()], {type: "application/json"});
-        if(!this.fileName) {
-            let result;
-            while (!result) {
-                result = prompt('Enter the name of .json file:', 'New map');
-                this.fileName = result;
-                this.centerNode(d);
-            }
-        }
-
-        saveAs(blob, `${this.fileName}.json`);
     }
 
     getTreeData() {
