@@ -1,7 +1,8 @@
 import * as Xml2Tree from "./xml2Tree";
 import * as $ from 'jquery';
 import * as path from 'path';
-
+import Node from './node';
+import IconsMap from './iconsMap';
 
 /**
  * Default config.
@@ -23,21 +24,13 @@ export default class MindMapRender {
 
     constructor(config = []) {
         this.setConfig(config);
-        this.defaultRoot = {
-            'vale': {
-                'TEXT': 'New node',
-            },
-            'name': 'New node',
-            'type': 'node',
-            'parent': undefined,
-            'children': []
-        };
-        this.fileName = "New map";
+        this.defaultRoot = new Node('New node', null);
+        this.fileName = 'New map';
     }
 
     open(file = null) {
         try {
-            if(file) {
+            if (file) {
                 this.treeData = this.getData(file);
             } else {
                 this.treeData = this.defaultRoot;
@@ -136,17 +129,7 @@ export default class MindMapRender {
                         if (!newNodeName) {
                             return;
                         }
-                        let newNode = {
-                            'value': {
-                                'TEXT': newNodeName,
-                            },
-                            'name': newNodeName,
-                            'type': 'node',
-                            "children": [],
-                            "parent": d,
-                            'depth': d.depth + 1,
-                        };
-
+                        let newNode = new Node(newNodeName, d);
                         let currentNode = this.tree.nodes(d);
 
                         if (currentNode[0]._children != null) {
@@ -582,8 +565,8 @@ export default class MindMapRender {
             .attr("text-anchor", function (d) {
                 return d.children || d._children ? "end" : "start";
             })
-            .text(function (d) {
-                return d.icons.join('') + ' ' + d.name;
+            .text((d) => {
+                return this.getStatus(d) + d.name + ' ' + d.icons.join('');
             })
             .style("fill-opacity", 0)
             .on('contextmenu', d3.contextMenu(this.menu));
@@ -611,8 +594,8 @@ export default class MindMapRender {
             .attr("text-anchor", function (d) {
                 return d.children || d._children ? "end" : "start";
             })
-            .text(function (d) {
-                return d.icons.join('') + ' ' + d.name;
+            .text((d) => {
+                return this.getStatus(d) + d.name + ' ' + d.icons.join('');
             });
 
         // Change the circle fill depending on whether it has children and is collapsed
@@ -692,6 +675,17 @@ export default class MindMapRender {
             d.x0 = d.x;
             d.y0 = d.y;
         });
+    }
+
+    getStatus(d) {
+        let result = '';
+
+        if(d.isTested)
+            result = result + IconsMap.tested;
+        if(d.isBug)
+            result = result + IconsMap.bug;
+
+        return result ? result + ' ' : '';
     }
 
     // TODO: Pan function, can be better implemented.
