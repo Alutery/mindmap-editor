@@ -7,7 +7,7 @@ export default class Node {
         this.depth = parent ? parent.depth + 1 : 1;
         this.icons = [];
         this.attributes = [];
-        this.isTested = true;
-        this.isBug = true;
+        this.isTested = false;
+        this.isBug = false;
     }
 }

@@ -11,12 +11,14 @@ const mmRender = new MindMapRender();
 
 const btnNew = document.getElementById('new');
 const btnOpen = document.getElementById('open');
-const btnSave = document.getElementById('save');
-const btnSaveAs = document.getElementById('saveAs');
+const btnSaveJSON = document.getElementById('saveAsJSON');
+const btnSaveXML = document.getElementById('saveAsXML');
 const btnExpandAll = document.getElementById('expandAll');
 const btnCollapseAll = document.getElementById('collapseAll');
 const btnFocusRoot = document.getElementById('focusRoot');
 const fileInput = document.getElementById('fileInput');
+const btnRemoveTested = document.getElementById('removeTested');
+const btnRemoveBug = document.getElementById('removeBug');
 
 let isOpen = false;
 
@@ -36,7 +38,7 @@ btnNew.addEventListener('click', () => {
     }
 });
 
-btnSave.addEventListener('click', () => {
+btnSaveJSON.addEventListener('click', () => {
     if (isOpen) {
         saveAsJson();
     } else {
@@ -44,9 +46,9 @@ btnSave.addEventListener('click', () => {
     }
 });
 
-btnSaveAs.addEventListener('click', () => {
+btnSaveXML.addEventListener('click', () => {
     if (isOpen) {
-        saveAsJson();
+        // not implemented
     } else {
         alert('No thing to save!');
     }
@@ -101,3 +103,11 @@ function saveAsJson() {
     let blob = new Blob([mmRender.getTreeData()], {type: "application/json"});
     saveAs(blob, `${mmRender.fileName}.json`);
 }
+
+btnRemoveTested.addEventListener('click', () => {
+    mmRender.removeFlags('isTested');
+});
+
+btnRemoveBug.addEventListener('click', () => {
+    mmRender.removeFlags('isBug');
+});

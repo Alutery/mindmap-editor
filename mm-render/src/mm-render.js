@@ -175,7 +175,21 @@ export default class MindMapRender {
                             alert('Cannot delete the root!');
                         }
                     }
-                }
+                },
+                {
+                    title: '✔️ Passed️',
+                    action: (el, d, i) => {
+                        d.isTested = !d.isTested;
+                        this.update(d);
+                    }
+                },
+                {
+                    title: '❌ Bug',
+                    action: (el, d, i) => {
+                        d.isBug = !d.isBug;
+                        this.update(d);
+                    }
+                },
             ];
 
         d3.contextMenu = (menu, openCallback) => {
@@ -800,6 +814,18 @@ export default class MindMapRender {
                 this.visit(children[i], visitFn, childrenFn);
             }
         }
+    }
+
+    removeFlags(flag) {
+        if(!this.treeData.hasOwnProperty(flag) || typeof this.treeData[flag] !== "boolean") {
+            throw new Error('Flag not exist.');
+        }
+        this.visit(this.treeData, (d) => {
+            d[flag] = false;
+        }, (d) => {
+            return d.children && d.children.length > 0 ? d.children : null;
+        });
+        this.update(this.root);
     }
 
     // Define the zoom function for the zoomable tree
