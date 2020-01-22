@@ -564,7 +564,7 @@ export default class MindMapRender {
             .attr('class', 'nodeCircle')
             .attr("r", 0)
             .style("fill", function (d) {
-                return d._children ? "lightsteelblue" : "#fff";
+                return (!d._children && !d.children) ? "#2f227a" : (d._children ? "lightsteelblue" : "#fff");
             })
             .on('contextmenu', d3.contextMenu(this.menu));
         // adding popup dialogue for changing/adding/deleting nodes to circles
@@ -591,7 +591,7 @@ export default class MindMapRender {
             .attr('class', 'ghostCircle')
             .attr("r", 30)
             .attr("opacity", 0.2) // change this to zero to hide the target area
-            .style("fill", "red")
+            .style("fill", "#a499c4")
             .attr('pointer-events', 'mouseover')
             .on("mouseover", (node) => {
                 this.overCircle(node);
@@ -616,7 +616,7 @@ export default class MindMapRender {
         node.select("circle.nodeCircle")
             .attr("r", 4.5)
             .style("fill", function (d) {
-                return d._children ? "lightsteelblue" : "#fff";
+                return (!d._children && !d.children) ? "#08457e" : (d._children ? "lightsteelblue" : "#fff");
             });
 
         // Transition nodes to their new position.

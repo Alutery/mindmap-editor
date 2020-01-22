@@ -28,9 +28,8 @@ body {
 }
 .templink {
     fill: none;
-    stroke: red;
-    /*stroke-width: 1px;*/
-    stroke-width: 3px;
+    stroke: #5c608d;
+    stroke-width: 1px;
 }
 .ghostCircle.show{
     display:block;
