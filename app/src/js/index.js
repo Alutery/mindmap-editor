@@ -19,6 +19,7 @@ const btnFocusRoot = document.getElementById('focusRoot');
 const fileInput = document.getElementById('fileInput');
 const btnRemoveTested = document.getElementById('removeTested');
 const btnRemoveBug = document.getElementById('removeBug');
+const btnShowAttributes = document.getElementById('showAttributes');
 
 let isOpen = false;
 
@@ -110,4 +111,8 @@ btnRemoveTested.addEventListener('click', () => {
 
 btnRemoveBug.addEventListener('click', () => {
     mmRender.removeFlags('isBug');
+});
+
+btnShowAttributes.addEventListener('click', () => {
+    mmRender.toggleAttributes();
 });

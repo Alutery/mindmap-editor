@@ -55,6 +55,7 @@ export default class MindMapRender {
         // Calculate total nodes, max label length
         this.totalNodes = 0;
         this.maxLabelLength = 0;
+        this.showAttributes = false;
 
         // variables for drag/drop
         this.selectedNode = null;
@@ -67,6 +68,7 @@ export default class MindMapRender {
         this.viewerHeight = $(document).height();
 
         this.tree = d3.layout.tree()
+            .separation(function(d) { return 5; })
             .size([this.viewerHeight, this.viewerWidth]);
 
         // Define the root
@@ -586,6 +588,24 @@ export default class MindMapRender {
             .on('contextmenu', d3.contextMenu(this.menu));
         // adding popup dialogue for changing/adding/deleting nodes for text captions too
 
+        let textG = nodeEnter.append('g')
+            .on('click', function(d) {
+                // window.location = d.url;
+            });
+
+        textG.append('text')
+            .attr('x', function (d) {
+                return d.children || d._children ? -15 : 15;
+            })
+            .attr('y', function (d) {
+                return 11;
+            })
+            .text((d) => {
+                return this.showAttributes && !!d.attributes.length ? d.attributes[0][0] + ': ' + d.attributes[0][1] : '';
+            })
+            .style('fill', '#929292')
+            .style('font-size', '6px');
+
         // phantom node to give us mouseover in a radius around it
         nodeEnter.append("circle")
             .attr('class', 'ghostCircle')
@@ -601,7 +621,7 @@ export default class MindMapRender {
             });
 
         // Update the text to reflect whether node has children or not.
-        node.select('text')
+        node.select('.node text')
             .attr("x", function (d) {
                 return d.children || d._children ? -10 : 10;
             })
@@ -611,6 +631,22 @@ export default class MindMapRender {
             .text((d) => {
                 return this.getStatus(d) + d.name + ' ' + d.icons.join('');
             });
+
+        node.select('.node g text')
+            .attr('x', function (d) {
+                return d.children || d._children ? -10 : 10;
+            })
+            .attr('y', function (d) {
+                return 11;
+            })
+            .attr("text-anchor", function (d) {
+                return d.children || d._children ? "end" : "start";
+            })
+            .text((d) => {
+                return this.showAttributes && !!d.attributes.length  ? d.attributes[0][0] + ': ' + d.attributes[0][1] : '';
+            })
+            .style('fill', '#929292')
+            .style('font-size', '6px');
 
         // Change the circle fill depending on whether it has children and is collapsed
         node.select("circle.nodeCircle")
@@ -694,9 +730,9 @@ export default class MindMapRender {
     getStatus(d) {
         let result = '';
 
-        if(d.isTested)
+        if (d.isTested)
             result = result + IconsMap.tested;
-        if(d.isBug)
+        if (d.isBug)
             result = result + IconsMap.bug;
 
         return result ? result + ' ' : '';
@@ -817,7 +853,7 @@ export default class MindMapRender {
     }
 
     removeFlags(flag) {
-        if(!this.treeData.hasOwnProperty(flag) || typeof this.treeData[flag] !== "boolean") {
+        if (!this.treeData.hasOwnProperty(flag) || typeof this.treeData[flag] !== "boolean") {
             throw new Error('Flag not exist.');
         }
         this.visit(this.treeData, (d) => {
@@ -825,6 +861,11 @@ export default class MindMapRender {
         }, (d) => {
             return d.children && d.children.length > 0 ? d.children : null;
         });
+        this.update(this.root);
+    }
+
+    toggleAttributes() {
+        this.showAttributes = !this.showAttributes;
         this.update(this.root);
     }
 
