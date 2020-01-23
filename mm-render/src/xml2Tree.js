@@ -1,4 +1,5 @@
 import ParseAttributes from "./parseAttributes";
+import Node from './node';
 
 export {readTextFile, arrayMapping, arrayToJSON, XMLToArray}; // список экспортируемых переменных
 
@@ -93,19 +94,7 @@ function arrayMapping(tagArray, impNodes, isAttributes) {
  * @param {array} parent - id of node's parent.
  */
 function objToJSON(tagArray, id, parent) {
-    let node = {};  // we create an empty object and save there all the relevant information about the node
-    node.value = tagArray[id].attr;
-    node.name = tagArray[id].attr['TEXT'];
-    node.extra = tagArray[id].extra;
-    node.type = tagArray[id].type;
-    if (parent === false) {
-        node.parent = 'null'
-    } else {
-        node.parent = parent.name;
-    }
-    node.children = [];
-    node.icons = [];
-    node.attributes = [];
+    let node = new Node(tagArray[id].attr['TEXT'], parent === false ? 'null' : parent.name);  // we create an empty object and save there all the relevant information about the node
 
     let i = 0;
 
