@@ -3,6 +3,7 @@ import * as $ from 'jquery';
 import * as path from 'path';
 import Node from './node';
 import IconsMap from './iconsMap';
+import * as d3 from 'd3';
 
 /**
  * Default config.
