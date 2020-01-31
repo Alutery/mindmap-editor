@@ -7,7 +7,7 @@
     <script src="http://underscorejs.org/underscore-min.js"></script>
     <script src="http://d3js.org/d3.v3.min.js"></script>
 </head>
-<body>
+<body spellcheck="false">
     <ul class="menu-bar">
         <li class="drop">
             <a>File</a>
@@ -40,5 +40,24 @@
         <li id="about"><a>About</a></li>
     </ul>
     <div id="tree-container"></div>
+    <div class="bg-modal">
+        <div class="modal-content">
+            <div id="close-icon" class="close">+</div>
+            <span class="table-add float-right mb-3 mr-2"><a href="#!" class="text-success"><i
+                    class="fas fa-plus fa-2x" aria-hidden="true"></i></a></span>
+            <table>
+                <col style="width:30%">
+                <col style="width:70%">
+                <thead>
+                <tr>
+                    <td>Key</td>
+                    <td>Value</td>
+                </tr>
+                </thead>
+                <tbody>
+                </tbody>
+            </table>
+        </div>
+    </div>
 </body>
 </html>

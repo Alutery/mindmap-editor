@@ -68,7 +68,9 @@ export default class MindMapRender {
         this.viewerHeight = $(document).height();
 
         this.tree = d3.layout.tree()
-            .separation(function(d) { return 5; })
+            .separation(function (d) {
+                return 5;
+            })
             .size([this.viewerHeight, this.viewerWidth]);
 
         // Define the root
@@ -176,6 +178,13 @@ export default class MindMapRender {
                         } else {
                             alert('Cannot delete the root!');
                         }
+                    }
+                },
+                {
+                    title: 'Edit attributes',
+                    action: (el, d, i) => {
+                        document.querySelector('.bg-modal').style.display = 'flex';
+                        this.tableCreate(d.attributes);
                     }
                 },
                 {
@@ -578,6 +587,7 @@ export default class MindMapRender {
             })
             .attr("dy", ".35em")
             .attr('class', 'nodeText')
+            .attr('contenteditable', 'true')
             .attr("text-anchor", function (d) {
                 return d.children || d._children ? "end" : "start";
             })
@@ -589,7 +599,7 @@ export default class MindMapRender {
         // adding popup dialogue for changing/adding/deleting nodes for text captions too
 
         let textG = nodeEnter.append('g')
-            .on('click', function(d) {
+            .on('click', function (d) {
                 // window.location = d.url;
             });
 
@@ -643,7 +653,7 @@ export default class MindMapRender {
                 return d.children || d._children ? "end" : "start";
             })
             .text((d) => {
-                return this.showAttributes && !!d.attributes.length  ? d.attributes[0][0] + ': ' + d.attributes[0][1] : '';
+                return this.showAttributes && !!d.attributes.length ? d.attributes[0][0] + ': ' + d.attributes[0][1] : '';
             })
             .style('fill', '#929292')
             .style('font-size', '6px');
@@ -873,4 +883,31 @@ export default class MindMapRender {
     // zoom() {
     //     this.svgGroup.attr("transform", "translate(" + d3.event.translate + ")scale(" + d3.event.scale + ")");
     // }
+
+    tableCreate(attributes) {
+
+        let old_tbody = document.getElementsByTagName('tbody')[0];
+        let new_tbody = document.createElement('tbody');
+
+        attributes.forEach((attr) => {
+            let key = attr[0], value = attr[1];
+            let tr = document.createElement('tr');
+            let tdKey = document.createElement('td');
+            tdKey.appendChild(document.createTextNode(key));
+            tdKey.setAttribute('contenteditable', true);
+
+            let tdValue = document.createElement('td');
+            tdValue.appendChild(document.createTextNode(value));
+
+            // tdValue.setAttribute('rowSpan', '2');
+            tdValue.setAttribute('contenteditable', true);
+
+            tr.appendChild(tdKey);
+            tr.appendChild(tdValue);
+
+            new_tbody.appendChild(tr);
+        });
+
+        old_tbody.parentNode.replaceChild(new_tbody, old_tbody);
+    }
 }

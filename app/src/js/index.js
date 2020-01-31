@@ -1,6 +1,7 @@
 import '../css/style.css';
 import '../css/menu-style.css';
 import '../css/context-menu-style.css';
+import '../css/modal-style.css';
 import '../../favicon.ico';
 import * as $ from 'jquery';
 import { saveAs } from "file-saver";
@@ -115,4 +116,8 @@ btnRemoveBug.addEventListener('click', () => {
 
 btnShowAttributes.addEventListener('click', () => {
     mmRender.toggleAttributes();
+});
+
+document.getElementById('close-icon').addEventListener('click', () => {
+    document.querySelector('.bg-modal').style.display = 'none';
 });
