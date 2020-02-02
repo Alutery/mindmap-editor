@@ -298,10 +298,6 @@ class MindMapRender {
         this.showAttributes = !this.showAttributes;
         this.update(this.root);
     }
-
-    zoom() {
-        this.svgGroup.attr("transform", "translate(" + d3.event.translate + ")scale(" + d3.event.scale + ")");
-    }
 }
 
 Object.assign(MindMapRender.prototype, {

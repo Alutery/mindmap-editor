@@ -7,11 +7,15 @@ export function collapse(d) {
 }
 
 export function expand(d) {
+    let children = (d.children) ? d.children : d._children;
+
     if (d._children) {
         d.children = d._children;
-        d.children.forEach((d) => this.expand(d));
         d._children = null;
     }
+
+    if(children)
+        children.forEach(expand);
 }
 
 export function expandAll() {
