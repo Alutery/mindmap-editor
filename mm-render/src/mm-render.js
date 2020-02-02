@@ -1,18 +1,24 @@
-import * as Xml2Tree from "./xml2Tree";
 import * as $ from 'jquery';
-import * as path from 'path';
 import Node from './node';
 import IconsMap from './iconsMap';
 import * as d3 from 'd3';
+import Reader from "./reader";
+import getTreeData from "./getTreeData";
+import update from "./update";
+import {expand, collapse, expandAll, collapseAll} from "./expand-collapse";
+import {initiateDrag, dragStart, dragEnd, dragged, endDrag} from "./drag";
+import updateTempConnector from './updateTempConnector.js';
+import tableCreate from './tableCreate.js';
+import visit from "./visit";
+import centerNode from "./centerNode";
+import removeFlags from "./removeFlags";
+import updateMaxLabelLength from "./updateMaxLabelLength";
 
 /**
  * Default config.
- * @type {{duration: number, panSpeed: number, panBoundary: number, isAttributes: boolean, secondLevelNodes: []}}
+ * @type {{duration: number, panSpeed: number, panBoundary: number}}
  */
 const defaults = {
-    secondLevelNodes: [],
-    isAttributes: true,
-
     // panning variables
     panSpeed: 200,
     panBoundary: 20, // Within 20px from edges will pan when dragging.
@@ -21,18 +27,18 @@ const defaults = {
 };
 
 
-export default class MindMapRender {
+class MindMapRender {
 
     constructor(config = []) {
         this.setConfig(config);
         this.defaultRoot = new Node('New node', null);
-        this.fileName = 'New map';
+        this.reader = new Reader();
     }
 
     open(file = null) {
         try {
             if (file) {
-                this.treeData = this.getData(file);
+                this.treeData = this.reader.getData(file);
             } else {
                 this.treeData = this.defaultRoot;
             }
@@ -252,490 +258,8 @@ export default class MindMapRender {
         this.centerNode(this.root);
     }
 
-    updateMaxLabelLength() {
-        this.maxLabelLength = 0;
-        this.visit(this.treeData, (d) => {
-            this.totalNodes++;
-            this.maxLabelLength = Math.max(d.name.length, this.maxLabelLength);
-        }, (d) => {
-            return d.children && d.children.length > 0 ? d.children : null;
-        });
-    }
-
-    dragStart(self) {
-        return function (d) {
-            if (d == self.root) {
-                return;
-            }
-            self.dragStarted = true;
-            self.nodes = self.tree.nodes(d);
-            d3.event.sourceEvent.stopPropagation();
-            // it's important that we suppress the mouseover event on the node being dragged.
-            // Otherwise it will absorb the mouseover event and the underlying node will not detect it
-            // d3.select(this).attr('pointer-events', 'none');
-        }
-    }
-
-    dragged(self) {
-        {
-            return function (d) {
-                if (this === self.root) {
-                    return;
-                }
-                if (self.dragStarted) {
-                    self.domNode = this;
-                    self.initiateDrag(d, self.domNode, self);
-                }
-
-                // get coords of mouseEvent relative to svg container to allow for panning
-                let relCoords = d3.mouse($('svg').get(0));
-                if (relCoords[0] < self.panBoundary) {
-                    self.panTimer = true;
-                    self.pan(this, 'left');
-                } else if (relCoords[0] > ($('svg').width() - self.panBoundary)) {
-                    self.panTimer = true;
-                    self.pan(this, 'right');
-                } else if (relCoords[1] < self.panBoundary) {
-                    self.panTimer = true;
-                    self.pan(this, 'up');
-                } else if (relCoords[1] > ($('svg').height() - self.panBoundary)) {
-                    self.panTimer = true;
-                    self.pan(this, 'down');
-                } else {
-                    try {
-                        clearTimeout(self.panTimer);
-                    } catch (e) {
-
-                    }
-                }
-                d.x0 += d3.event.dy;
-                d.y0 += d3.event.dx;
-                let node = d3.select(this);
-                node.attr("transform", "translate(" + d.y0 + "," + d.x0 + ")");
-                self.updateTempConnector(self);
-            }
-        }
-    }
-
-    dragEnd(self) {
-        return function (d) {
-            if (d == self.root) {
-                return;
-            }
-            self.domNode = this;
-            if (self.selectedNode) {
-                // now remove the element from the parent, and insert it into the new elements children
-                let index = self.draggingNode.parent.children.indexOf(self.draggingNode);
-                if (index > -1) {
-                    self.draggingNode.parent.children.splice(index, 1);
-                }
-                if (typeof self.selectedNode.children !== 'undefined' || typeof self.selectedNode._children !== 'undefined') {
-                    if (typeof self.selectedNode.children !== 'undefined') {
-                        self.selectedNode.children.push(self.draggingNode);
-                    } else {
-                        self.selectedNode._children.push(self.draggingNode);
-                    }
-                } else {
-                    self.selectedNode.children = [];
-                    self.selectedNode.children.push(self.draggingNode);
-                }
-                // Make sure that the node being added to is expanded so user can see added node is correctly moved
-                self.expand(self.selectedNode);
-                self.updateMaxLabelLength.bind(self);
-
-                // self.sortTree();
-                self.endDrag(self);
-            } else {
-                self.endDrag(self);
-            }
-        }
-    }
-
-    /**
-     * Sort the tree according to the node names.
-     */
-    sortTree() {
-        this.tree.sort(function (a, b) {
-            return b.name.toLowerCase() < a.name.toLowerCase() ? 1 : -1;
-        });
-    }
-
-    initiateDrag(d, domNode, self) {
-        self.draggingNode = d;
-        d3.select(domNode).select('.ghostCircle').attr('pointer-events', 'none');
-        d3.selectAll('.ghostCircle').attr('class', 'ghostCircle show');
-        d3.select(domNode).attr('class', 'node activeDrag');
-
-        self.svgGroup.selectAll("g.node").sort(function (a, b) { // select the parent and sort the path's
-            if (a.id !== self.draggingNode.id) return 1; // a is not the hovered element, send "a" to the back
-            else return -1; // a is the hovered element, bring "a" to the front
-        });
-        // if nodes has children, remove the links and nodes
-        if (self.nodes.length > 1) {
-            // remove link paths
-            self.links = self.tree.links(self.nodes);
-            let nodePaths = self.svgGroup.selectAll("path.link")
-                .data(self.links, function (d) {
-                    return d.target.id;
-                }).remove();
-            // remove child nodes
-            let nodesExit = self.svgGroup.selectAll("g.node")
-                .data(self.nodes, function (d) {
-                    return d.id;
-                }).filter(function (d, i) {
-                    return d.id !== self.draggingNode.id;
-
-                }).remove();
-        }
-
-        // remove parent link
-        let parentLink = self.tree.links(self.tree.nodes(self.draggingNode.parent));
-        self.svgGroup.selectAll('path.link').filter(function (d, i) {
-            if (d.target.id === self.draggingNode.id) {
-                return true;
-            }
-            return false;
-        }).remove();
-
-        self.dragStarted = null;
-    }
-
-    endDrag(self) {
-        self.selectedNode = null;
-        d3.selectAll('.ghostCircle').attr('class', "ghostCircle");
-        d3.select(self.domNode).attr('class', 'node');
-        // now restore the mouseover event or we won't be able to drag a 2nd time
-        d3.select(self.domNode).select('.ghostCircle').attr('pointer-events', '');
-        self.updateTempConnector(self);
-        if (self.draggingNode !== null) {
-            self.update(self.root);
-            self.centerNode(self.draggingNode);
-            self.draggingNode = null;
-        }
-    }
-
-    // Helper functions for collapsing and expanding nodes.
-
-    collapse(d) {
-        if (d.children) {
-            d._children = d.children;
-            d._children.forEach((d) => this.collapse(d));
-            d.children = null;
-        }
-    }
-
-    expand(d) {
-        if (d._children) {
-            d.children = d._children;
-            d.children.forEach((d) => this.expand(d));
-            d._children = null;
-        }
-    }
-
-    expandAll() {
-        this.expand(this.root);
-        this.update(this.root);
-        this.centerNode(this.root);
-    }
-
-    collapseAll() {
-        if (!this.root.children) {
-            return;
-        }
-
-        let root = this.root;
-        root.children.forEach(() => this.collapse);
-        this.collapse(root);
-        this.update(root);
-        this.centerNode(root);
-    }
-
     focusRoot() {
         this.centerNode(this.root);
-    }
-
-    /**
-     * Get data from file (.mm or .json).
-     * @returns {*}
-     * @param file
-     */
-    getData(file) {
-        let filePath = URL.createObjectURL(file);
-        let extension = path.extname(file.name);
-        this.fileName = path.basename(file.name, extension);
-
-        switch (extension) {
-            case ".mm":
-                return this.readMM(filePath);
-            case ".json":
-                return this.readJson(filePath);
-            default:
-                throw new Error('Wrong format: please, choose .mm or .json');
-        }
-    }
-
-    readMM(flePath) {
-        let XMLText = Xml2Tree.readTextFile(flePath);
-        let tagArray = Xml2Tree.XMLToArray(XMLText);  // returns an array of all nodes with related info
-        let mapArray = Xml2Tree.arrayMapping(tagArray, this.secondLevelNodes, this.isAttributes);
-        let treeData = Xml2Tree.arrayToJSON(mapArray);  // converts array into a JSON file
-
-        return treeData[0]['children'][0];
-    }
-
-    readJson(flePath) {
-        let JSONText = Xml2Tree.readTextFile(flePath);
-        return JSON.parse(JSONText);
-    }
-
-    getTreeData() {
-        const getCircularReplacer = (deletePorperties) => {
-            const seen = new WeakSet();
-            return (key, value) => {
-                if (typeof value === "object" && value !== null) {
-                    if (deletePorperties) {
-                        //delete all properties you don't want in your json (not very convenient but a good temporary solution)
-                        delete value.id;
-                        delete value.x0;
-                        delete value.y0;
-                        delete value.y;
-                        delete value.x;
-                        delete value.depth;
-                    }
-                    if (seen.has(value)) {
-                        return;
-                    }
-                    seen.add(value);
-                }
-                return value;
-            };
-        };
-
-        let root = JSON.stringify(this.root, getCircularReplacer(false)); //Stringify a first time to clone the root object (it's allow you to delete properties you don't want to save)
-        let rootCopy = JSON.parse(root);
-        rootCopy = JSON.stringify(rootCopy, getCircularReplacer(true), 2); //Stringify a second time to delete the propeties you don't need
-
-        return rootCopy;
-    }
-
-    update(source) {
-        // Compute the new height, function counts total children of root node and sets tree height accordingly.
-        // This prevents the layout looking squashed when new nodes are made visible or looking sparse when nodes are removed
-        // This makes the layout more consistent.
-        let levelWidth = [1];
-        let childCount = (level, n) => {
-
-            if (n.children && n.children.length > 0) {
-                if (levelWidth.length <= level + 1) levelWidth.push(0);
-
-                levelWidth[level + 1] += n.children.length;
-                n.children.forEach((d) => {
-                    childCount(level + 1, d);
-                });
-            }
-        };
-        childCount(0, this.root);
-
-        let newHeight = d3.max(levelWidth) * 30; // 25 pixels per line
-        this.tree = this.tree.size([newHeight, this.viewerWidth]);
-
-        // Compute the new tree layout.
-        let nodes = this.tree.nodes(this.root).reverse(),
-            links = this.tree.links(nodes);
-
-        // Set widths between levels based on maxLabelLength.
-        nodes.forEach(function (d) {
-            d.y = (d.depth * (this.maxLabelLength * 7)); //maxLabelLength * 10px
-            // alternatively to keep a fixed scale one can set a fixed depth per level
-            // Normalize for fixed-depth by commenting out below line
-            // d.y = (d.depth * 500); //500px per level.
-        }, this);
-
-        // Update the nodes…
-        let node = this.svgGroup.selectAll("g.node")
-            .data(nodes, (d) => {
-                return d.id || (d.id = ++(this.i));
-            });
-
-        // Enter any new nodes at the parent's previous position.
-        let nodeEnter = node.enter().append("g")
-            .call(this.dragListener)
-            .attr("class", "node")
-            .attr("transform", function (d) {
-                return "translate(" + source.y0 + "," + source.x0 + ")";
-            })
-            .on('click', (d) => {
-                if (d3.event.defaultPrevented) return; // click suppressed
-                d = this.toggleChildren(d);
-                this.updateMaxLabelLength();
-                this.update(d);
-                this.centerNode(d);
-            });
-
-        nodeEnter.append("circle")
-            .attr('class', 'nodeCircle')
-            .attr("r", 0)
-            .style("fill", function (d) {
-                return (!d._children && !d.children) ? "#2f227a" : (d._children ? "lightsteelblue" : "#fff");
-            })
-            .on('contextmenu', d3.contextMenu(this.menu));
-        // adding popup dialogue for changing/adding/deleting nodes to circles
-
-
-        nodeEnter.append("text")
-            .attr("x", function (d) {
-                return d.children || d._children ? -10 : 10;
-            })
-            .attr("dy", ".35em")
-            .attr('class', 'nodeText')
-            .attr('contenteditable', 'true')
-            .attr("text-anchor", function (d) {
-                return d.children || d._children ? "end" : "start";
-            })
-            .text((d) => {
-                return this.getStatus(d) + d.name + ' ' + d.icons.join('');
-            })
-            .style("fill-opacity", 0)
-            .on('contextmenu', d3.contextMenu(this.menu));
-        // adding popup dialogue for changing/adding/deleting nodes for text captions too
-
-        let textG = nodeEnter.append('g')
-            .on('click', function (d) {
-                // window.location = d.url;
-            });
-
-        textG.append('text')
-            .attr('x', function (d) {
-                return d.children || d._children ? -15 : 15;
-            })
-            .attr('y', function (d) {
-                return 11;
-            })
-            .text((d) => {
-                return this.showAttributes && !!d.attributes.length ? d.attributes[0][0] + ': ' + d.attributes[0][1] : '';
-            })
-            .style('fill', '#929292')
-            .style('font-size', '6px');
-
-        // phantom node to give us mouseover in a radius around it
-        nodeEnter.append("circle")
-            .attr('class', 'ghostCircle')
-            .attr("r", 30)
-            .attr("opacity", 0.2) // change this to zero to hide the target area
-            .style("fill", "#a499c4")
-            .attr('pointer-events', 'mouseover')
-            .on("mouseover", (node) => {
-                this.overCircle(node);
-            })
-            .on("mouseout", (node) => {
-                this.outCircle(node);
-            });
-
-        // Update the text to reflect whether node has children or not.
-        node.select('.node text')
-            .attr("x", function (d) {
-                return d.children || d._children ? -10 : 10;
-            })
-            .attr("text-anchor", function (d) {
-                return d.children || d._children ? "end" : "start";
-            })
-            .text((d) => {
-                return this.getStatus(d) + d.name + ' ' + d.icons.join('');
-            });
-
-        node.select('.node g text')
-            .attr('x', function (d) {
-                return d.children || d._children ? -10 : 10;
-            })
-            .attr('y', function (d) {
-                return 11;
-            })
-            .attr("text-anchor", function (d) {
-                return d.children || d._children ? "end" : "start";
-            })
-            .text((d) => {
-                return this.showAttributes && !!d.attributes.length ? d.attributes[0][0] + ': ' + d.attributes[0][1] : '';
-            })
-            .style('fill', '#929292')
-            .style('font-size', '6px');
-
-        // Change the circle fill depending on whether it has children and is collapsed
-        node.select("circle.nodeCircle")
-            .attr("r", 4.5)
-            .style("fill", function (d) {
-                return (!d._children && !d.children) ? "#08457e" : (d._children ? "lightsteelblue" : "#fff");
-            });
-
-        // Transition nodes to their new position.
-        let nodeUpdate = node.transition()
-            .duration(this.duration)
-            .attr("transform", function (d) {
-                return "translate(" + d.y + "," + d.x + ")";
-            });
-
-        // Fade the text in
-        nodeUpdate.select("text")
-            .style("fill-opacity", 1);
-
-        // Transition exiting nodes to the parent's new position.
-        let nodeExit = node.exit().transition()
-            .duration(this.duration)
-            .attr("transform", function (d) {
-                return "translate(" + source.y + "," + source.x + ")";
-            })
-            .remove();
-
-        nodeExit.select("circle")
-            .attr("r", 0);
-
-        nodeExit.select("text")
-            .style("fill-opacity", 0);
-
-        // Update the links…
-        let link = this.svgGroup.selectAll("path.link")
-            .data(links, function (d) {
-                return d.target.id;
-            });
-
-        // Enter any new links at the parent's previous position.
-        link.enter().insert("path", "g")
-            .attr("class", "link")
-            .attr("d", (d) => {
-                let o = {
-                    x: source.x0,
-                    y: source.y0
-                };
-                return this.diagonal({
-                    source: o,
-                    target: o
-                });
-            });
-
-        // Transition links to their new position.
-        link.transition()
-            .duration(this.duration)
-            .attr("d", this.diagonal);
-
-        // Transition exiting nodes to the parent's new position.
-        link.exit().transition()
-            .duration(this.duration)
-            .attr("d", (d) => {
-                let o = {
-                    x: source.x,
-                    y: source.y
-                };
-                return this.diagonal({
-                    source: o,
-                    target: o
-                });
-            })
-            .remove();
-
-        // Stash the old positions for transition.
-        nodes.forEach(function (d) {
-            d.x0 = d.x;
-            d.y0 = d.y;
-        });
     }
 
     getStatus(d) {
@@ -749,54 +273,6 @@ export default class MindMapRender {
         return result ? result + ' ' : '';
     }
 
-    // TODO: Pan function, can be better implemented.
-    pan(domNode, direction) {
-        let speed = this.panSpeed;
-        let translateCoords;
-        let scaleX, scaleY;
-        let scale;
-        let translateX, translateY;
-
-        if (this.panTimer) {
-            clearTimeout(this.panTimer);
-            translateCoords = d3.transform(this.svgGroup.attr("transform"));
-            if (direction === 'left' || direction === 'right') {
-                translateX = direction === 'left' ? translateCoords.translate[0] + speed : translateCoords.translate[0] - speed;
-                translateY = translateCoords.translate[1];
-            } else if (direction === 'up' || direction === 'down') {
-                translateX = translateCoords.translate[0];
-                translateY = direction === 'up' ? translateCoords.translate[1] + speed : translateCoords.translate[1] - speed;
-            }
-            scaleX = translateCoords.scale[0];
-            scaleY = translateCoords.scale[1];
-            scale = this.zoomListener.scale();
-            this.svgGroup.transition().attr("transform", "translate(" + translateX + "," + translateY + ")scale(" + scale + ")");
-            d3.select(domNode).select('g.node').attr("transform", "translate(" + translateX + "," + translateY + ")");
-            this.zoomListener.scale(this.zoomListener.scale());
-            this.zoomListener.translate([translateX, translateY]);
-            this.panTimer = setTimeout(() => {
-                this.pan(domNode, speed, direction);
-            }, 50);
-        }
-    }
-
-    // Function to center node when clicked/dropped so node doesn't get lost when collapsing/moving with large amount of children.
-    centerNode(source) {
-        let scale = this.zoomListener.scale();
-        let x = -source.y0;
-        let y = -source.x0;
-
-        x = x * scale + this.viewerWidth / 2;
-        y = y * scale + this.viewerHeight / 2;
-        d3.select('g').transition()
-            .duration(this.duration)
-            .attr("transform", "translate(" + x + "," + y + ")scale(" + scale + ")");
-        this.zoomListener.scale(scale);
-        this.zoomListener.translate([x, y]);
-    }
-
-    // Toggle children function
-
     toggleChildren(d) {
         if (d.children) {
             d._children = d.children;
@@ -808,35 +284,6 @@ export default class MindMapRender {
         return d;
     }
 
-    // Function to update the temporary connector indicating dragging affiliation
-    updateTempConnector(self) {
-        let data = [];
-        if (self.draggingNode != null && self.selectedNode != null) {
-            // have to flip the source coordinates since we did this for the existing connectors on the original tree
-            data = [{
-                source: {
-                    x: self.selectedNode.y0,
-                    y: self.selectedNode.x0
-                },
-                target: {
-                    x: self.draggingNode.y0,
-                    y: self.draggingNode.x0
-                }
-            }];
-        }
-
-        let link = this.svgGroup.selectAll(".templink").data(data);
-
-        link.enter().append("path")
-            .attr("class", "templink")
-            .attr("d", d3.svg.diagonal())
-            .attr('pointer-events', 'none');
-
-        link.attr("d", d3.svg.diagonal());
-
-        link.exit().remove();
-    };
-
     overCircle(d) {
         this.selectedNode = d;
         this.updateTempConnector(this);
@@ -847,68 +294,27 @@ export default class MindMapRender {
         this.updateTempConnector(this);
     };
 
-
-    // A recursive helper function for performing some setup by walking through all nodes
-    visit(parent, visitFn, childrenFn) {
-        if (!parent) return;
-
-        visitFn(parent);
-
-        let children = childrenFn(parent);
-        if (children) {
-            let count = children.length;
-            for (let i = 0; i < count; i++) {
-                this.visit(children[i], visitFn, childrenFn);
-            }
-        }
-    }
-
-    removeFlags(flag) {
-        if (!this.treeData.hasOwnProperty(flag) || typeof this.treeData[flag] !== "boolean") {
-            throw new Error('Flag not exist.');
-        }
-        this.visit(this.treeData, (d) => {
-            d[flag] = false;
-        }, (d) => {
-            return d.children && d.children.length > 0 ? d.children : null;
-        });
-        this.update(this.root);
-    }
-
     toggleAttributes() {
         this.showAttributes = !this.showAttributes;
         this.update(this.root);
     }
 
-    // Define the zoom function for the zoomable tree
-    // zoom() {
-    //     this.svgGroup.attr("transform", "translate(" + d3.event.translate + ")scale(" + d3.event.scale + ")");
-    // }
-
-    tableCreate(attributes) {
-
-        let old_tbody = document.getElementsByTagName('tbody')[0];
-        let new_tbody = document.createElement('tbody');
-
-        attributes.forEach((attr) => {
-            let key = attr[0], value = attr[1];
-            let tr = document.createElement('tr');
-            let tdKey = document.createElement('td');
-            tdKey.appendChild(document.createTextNode(key));
-            tdKey.setAttribute('contenteditable', true);
-
-            let tdValue = document.createElement('td');
-            tdValue.appendChild(document.createTextNode(value));
-
-            // tdValue.setAttribute('rowSpan', '2');
-            tdValue.setAttribute('contenteditable', true);
-
-            tr.appendChild(tdKey);
-            tr.appendChild(tdValue);
-
-            new_tbody.appendChild(tr);
-        });
-
-        old_tbody.parentNode.replaceChild(new_tbody, old_tbody);
+    zoom() {
+        this.svgGroup.attr("transform", "translate(" + d3.event.translate + ")scale(" + d3.event.scale + ")");
     }
 }
+
+Object.assign(MindMapRender.prototype, {
+    getTreeData,
+    update,
+    expand, collapse, expandAll, collapseAll,
+    initiateDrag, dragStart, dragEnd, dragged, endDrag,
+    updateTempConnector,
+    tableCreate,
+    visit,
+    centerNode,
+    removeFlags,
+    updateMaxLabelLength
+});
+
+export default MindMapRender;

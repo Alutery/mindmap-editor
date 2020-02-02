@@ -103,7 +103,7 @@ function toggleOpen() {
 
 function saveAsJson() {
     let blob = new Blob([mmRender.getTreeData()], {type: "application/json"});
-    saveAs(blob, `${mmRender.fileName}.json`);
+    saveAs(blob, `${mmRender.reader.fileName}.json`);
 }
 
 btnRemoveTested.addEventListener('click', () => {
